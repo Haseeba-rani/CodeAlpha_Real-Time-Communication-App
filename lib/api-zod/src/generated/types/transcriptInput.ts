@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface TranscriptInput {
+  /** @minLength 1 */
+  speaker: string;
+  /** @minLength 1 */
+  text: string;
 }

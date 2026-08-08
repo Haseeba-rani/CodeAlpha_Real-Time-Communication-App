@@ -5,7 +5,8 @@
  * Gen Z Meet meeting workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListMeetingsStatus } from './listMeetingsStatus';
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListMeetingsParams = {
+status?: ListMeetingsStatus;
+};

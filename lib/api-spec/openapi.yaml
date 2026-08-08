@@ -3,20 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Gen Z Meet meeting workspace API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: meetings
+    description: Meeting lifecycle and transcripts
+  - name: dashboard
+    description: Dashboard aggregates
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +27,279 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /meetings:
+    get:
+      operationId: listMeetings
+      tags: [meetings]
+      summary: List meetings for the current workspace user
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [live, scheduled, ended, all]
+      responses:
+        "200":
+          description: Meeting list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Meeting"
+    post:
+      operationId: createMeeting
+      tags: [meetings]
+      summary: Start a live meeting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeetingInput"
+      responses:
+        "201":
+          description: Meeting created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+  /meetings/{meetingId}:
+    get:
+      operationId: getMeeting
+      tags: [meetings]
+      summary: Get one meeting
+      parameters:
+        - $ref: "#/components/parameters/MeetingId"
+      responses:
+        "200":
+          description: Meeting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+        "404":
+          description: Meeting not found
+    patch:
+      operationId: updateMeeting
+      tags: [meetings]
+      summary: Update a meeting
+      parameters:
+        - $ref: "#/components/parameters/MeetingId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeetingUpdate"
+      responses:
+        "200":
+          description: Updated meeting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+  /meetings/{meetingId}/join:
+    post:
+      operationId: joinMeeting
+      tags: [meetings]
+      summary: Join a live meeting
+      parameters:
+        - $ref: "#/components/parameters/MeetingId"
+      responses:
+        "200":
+          description: Joined meeting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+  /meetings/{meetingId}/transcript:
+    post:
+      operationId: appendTranscript
+      tags: [meetings]
+      summary: Append a finalized transcript entry
+      parameters:
+        - $ref: "#/components/parameters/MeetingId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranscriptInput"
+      responses:
+        "200":
+          description: Meeting with appended transcript
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+  /meetings/{meetingId}/end:
+    post:
+      operationId: endMeeting
+      tags: [meetings]
+      summary: End a live meeting and generate notes
+      parameters:
+        - $ref: "#/components/parameters/MeetingId"
+      responses:
+        "200":
+          description: Ended meeting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+  /meetings/{meetingId}/notes:
+    post:
+      operationId: generateMeetingNotes
+      tags: [meetings]
+      summary: Generate notes from a meeting transcript
+      parameters:
+        - $ref: "#/components/parameters/MeetingId"
+      responses:
+        "200":
+          description: Meeting with generated notes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+  /history:
+    get:
+      operationId: listMeetingHistory
+      tags: [meetings]
+      summary: List ended meetings
+      responses:
+        "200":
+          description: Meeting history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Meeting"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard meeting aggregates
+      responses:
+        "200":
+          description: Dashboard overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
 components:
+  parameters:
+    MeetingId:
+      name: meetingId
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    Participant:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { type: string }
+        joinedAt: { type: string, format: date-time }
+        isMuted: { type: boolean }
+        cameraOn: { type: boolean }
+      required: [id, name, role, joinedAt, isMuted, cameraOn]
+    TranscriptEntry:
+      type: object
+      properties:
+        id: { type: string }
+        speaker: { type: string }
+        text: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, speaker, text, createdAt]
+    MeetingNotes:
+      type: object
+      properties:
+        summary: { type: string }
+        keyPoints:
+          type: array
+          items: { type: string }
+        decisions:
+          type: array
+          items: { type: string }
+        actionItems:
+          type: array
+          items: { type: string }
+        followUps:
+          type: array
+          items: { type: string }
+        generatedAt: { type: string, format: date-time }
+      required: [summary, keyPoints, decisions, actionItems, followUps, generatedAt]
+    Meeting:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        hostId: { type: string }
+        hostName: { type: string }
+        createdAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: ["string", "null"], format: date-time }
+        status:
+          type: string
+          enum: [live, scheduled, ended]
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Participant"
+        transcript:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranscriptEntry"
+        notes:
+          anyOf:
+            - $ref: "#/components/schemas/MeetingNotes"
+            - type: "null"
+        participantCount: { type: number }
+      required: [id, title, hostId, hostName, createdAt, startedAt, endedAt, status, participants, transcript, notes, participantCount]
+    MeetingInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        hostName: { type: string, minLength: 1, maxLength: 80 }
+      required: [title, hostName]
+    MeetingUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        status:
+          type: string
+          enum: [live, scheduled, ended]
+        endedAt: { type: ["string", "null"], format: date-time }
+    TranscriptInput:
+      type: object
+      properties:
+        speaker: { type: string, minLength: 1 }
+        text: { type: string, minLength: 1 }
+      required: [speaker, text]
+    Dashboard:
+      type: object
+      properties:
+        totalMeetings: { type: number }
+        liveMeetings: { type: number }
+        summaries: { type: number }
+        actionItems: { type: number }
+        hoursSaved: { type: number }
+        recent:
+          type: array
+          items:
+            $ref: "#/components/schemas/Meeting"
+        upcoming:
+          type: array
+          items:
+            $ref: "#/components/schemas/Meeting"
+      required: [totalMeetings, liveMeetings, summaries, actionItems, hoursSaved, recent, upcoming]
