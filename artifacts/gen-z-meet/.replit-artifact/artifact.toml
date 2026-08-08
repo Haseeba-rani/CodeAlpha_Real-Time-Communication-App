@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Gen Z Meet"
+description = "A dark, expressive meeting workspace for hosting live conversations, capturing transcripts, and turning real meeting notes into persistent follow-ups."
+version = "1.0.0"
+id = "artifacts/gen-z-meet"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23850
+
+[services.development]
+run = "pnpm --filter @workspace/gen-z-meet run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gen-z-meet", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/gen-z-meet/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23850"
+BASE_PATH = "/"

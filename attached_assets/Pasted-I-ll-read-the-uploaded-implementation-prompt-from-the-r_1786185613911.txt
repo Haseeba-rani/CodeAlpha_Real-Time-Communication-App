@@ -1,0 +1,52 @@
+I’ll read the uploaded implementation prompt from the repl, compare it with the current Gen Z Meet code, and then build the requested functional phase—including a live on-screen “meeting” experience where the word is visibly transcribed as it happens.
+
+
+5 actions
+The prompt confirms this is a full Firebase-backed meeting workflow, not just a visual page. I’m mapping the existing Firestore setup and backend capabilities first so the implementation uses the current auth/configuration without introducing duplicate systems.
+
+
+7 actions
+I’ve confirmed there are no existing meeting collections, meeting rules, or AI endpoints to reuse. I’m implementing the missing layer around the current Firebase app: Firestore meeting persistence/listeners, browser microphone/camera/screen controls, Web Speech live transcription, transcript-derived notes with a clear provider fallback, and protected routes that preserve the current shell.
+
+
+6 actions
+The data layer is in place. Next I’m wiring the user-facing meeting flows into the existing shell: real Firestore lists, the LIVE MEETING screen, live speech text (including interim words as they are spoken), controls, history/details, and persisted notes.
+
+
+7 actions
+The routing shell now points Meetings, History, and AI Notes to real pages. I’m replacing the dashboard’s hardcoded meeting data and adding the full live-meeting/detail flow next; the transcript will render interim speech immediately and persist finalized phrases to Firestore.
+
+
+2 actions
+The live meeting, Firestore-backed meeting pages, transcript capture, and notes generation are now wired into the app. I’m finishing the route registration and shared responsive styles, then I’ll run typecheck/build and fix any integration errors before restarting the workflow.
+
+
+2 actions
+The routes are registered. I’m checking the TypeScript integration now before styling the new surfaces, so any Firebase or browser API mismatches are caught at the source rather than hidden in the UI.
+
+
+3 actions
+Typecheck caught only closure narrowing issues in the live meeting component; I’m fixing those now, along with the Firestore join rule so an authenticated user can join a live room without making meeting data public.
+
+
+3 actions
+The closure and join-rule fixes are applied. I’m running typecheck now, then I’ll add the meeting-specific responsive styles and verify the new routes load without crashing.
+
+
+4 actions
+The core implementation typechecks. I’m adding the missing meeting-specific styles and improving permission handling so a denied camera does not disable the microphone/transcript path. After that I’ll run a production build, restart, and smoke-test the new routes.
+
+
+3 actions
+The meeting-specific UI and responsive behavior are added. I’m running the full validation pass now—typecheck, production build, workflow restart, and route screenshots—then I’ll fix any remaining runtime issue instead of declaring completion early.
+
+
+4 actions
+Typecheck, production build, and diff validation all pass. I’m restarting the managed web workflow and checking the new public route behavior plus the authenticated-route redirect so the meeting feature is verified in the running app.
+
+Restarted workflow artifacts/gen-z-meet: web
+The restarted workflow is running. I’m doing the final live smoke test now: checking logs, confirming protected redirects, and capturing the new Meetings/History/AI Notes screens for runtime and responsive issues.
+
+
+6 actions
+The protected-route smoke test is behaving correctly: unauthenticated access to /meetings, /history, and /ai-notes redirects to /login, and the running workflow has no new app crash. I’m doing one final review of the Firebase rules/data edge cases before I report the implementation and the one deployment step that cannot be completed from the frontend repl alone.

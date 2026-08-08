@@ -1,0 +1,570 @@
+You are now completing the final functional phase of my Gen Z Meet application.
+
+IMPORTANT:
+Do NOT redesign or replace the existing landing page.
+Do NOT break the existing Firebase Authentication, Login, Signup, Forgot Password, Dashboard, Profile, or Settings functionality.
+Do NOT remove any existing working functionality.
+Keep the current visual design, dark theme, typography, spacing, colors, sidebar, navigation, and responsive behavior consistent with the existing application.
+
+The application is already connected to Firebase and Firebase Authentication is working.
+Firestore is also configured and available.
+
+The remaining incomplete features are:
+1. Live Meetings
+2. Meeting History
+3. AI Notes
+
+I want these features to become REAL working application features, not static demo/mock UI.
+
+==================================================
+1. LIVE MEETING FEATURE
+==================================================
+
+Create a fully functional "Live Meeting" experience.
+
+When the user clicks:
+- "Start a meeting"
+- "Start Meeting"
+- or the Meetings item in the sidebar
+
+they should be taken to a real Live Meeting page.
+
+Use the exact wording "LIVE MEETING" wherever appropriate in the meeting interface.
+
+The Live Meeting page should contain:
+
+- Meeting title
+- Meeting ID
+- Current meeting status: LIVE
+- Start time
+- Participant area
+- Microphone control
+- Camera control
+- Screen-share control if supported
+- Leave meeting button
+- Live transcript panel
+- Meeting information
+- End meeting button
+
+The UI must clearly show that the meeting is currently LIVE.
+
+==================================================
+2. REAL-TIME MEETING DATA
+==================================================
+
+Use Firebase Firestore to persist meeting data.
+
+Create an appropriate Firestore structure, for example:
+
+meetings/{meetingId}
+
+with fields such as:
+
+- id
+- title
+- hostId
+- hostName
+- createdAt
+- startedAt
+- endedAt
+- status
+- participants
+- transcript
+- summary
+- actionItems
+
+Do NOT store everything only in React state.
+
+Meeting data must survive page refreshes.
+
+When a user starts a meeting:
+- Create a real Firestore meeting document.
+- Generate a unique meeting ID.
+- Set status to "live".
+- Save the authenticated user's UID as hostId.
+- Save timestamps.
+
+When the meeting ends:
+- Update status to "ended".
+- Save endedAt.
+- Save the final transcript.
+- Save generated AI notes/summary.
+- Save action items.
+
+Use Firestore real-time listeners where appropriate so meeting state updates without manually refreshing the page.
+
+==================================================
+3. LIVE TRANSCRIPT
+==================================================
+
+The meeting must have a LIVE TRANSCRIPT section.
+
+The transcript should visibly update while the meeting is active.
+
+Use browser-supported speech recognition/Web Speech API if available for the current browser.
+
+Requirements:
+
+- Ask for microphone permission when necessary.
+- Display recognized speech as live transcript text.
+- Clearly show "LIVE TRANSCRIPT".
+- Show newest transcript content automatically.
+- Associate transcript entries with the current meeting.
+- Persist transcript data to Firestore.
+- Do not use hardcoded fake transcript content.
+
+If browser speech recognition is unavailable:
+- Do not crash.
+- Show a clear message explaining that live transcription is unavailable in the current browser.
+- Keep the rest of the meeting functional.
+
+If multiple participants are supported, associate transcript entries with participant names when possible.
+
+==================================================
+4. MEETING PARTICIPANTS
+==================================================
+
+Use Firebase Authentication users.
+
+Show the current authenticated user as a participant.
+
+If implementing multi-user joining:
+- Allow another authenticated user to join using the meeting ID.
+- Store participant information in Firestore.
+- Update participant presence/status using Firestore listeners.
+- Show participants in the Live Meeting UI.
+
+Do not fabricate participant information.
+
+If actual browser-to-browser video/audio requires additional infrastructure, implement the safest working architecture available using WebRTC with Firestore signaling.
+
+At minimum:
+- microphone controls must work
+- camera controls must work
+- participant state must be real
+- meeting status must be real
+- transcript must be real
+
+Do not replace working functionality with fake buttons.
+
+==================================================
+5. MEETINGS PAGE
+==================================================
+
+Make the existing "Meetings" sidebar item functional.
+
+The Meetings page should show:
+
+- Upcoming meetings
+- Live meetings
+- Recent meetings
+- Create/start meeting button
+- Join meeting button
+- Meeting title
+- Date/time
+- Status
+- Host
+- Participant count
+
+Data must come from Firestore.
+
+Do not use hardcoded meeting records.
+
+Clicking a meeting should open its corresponding meeting/details page.
+
+If a meeting is currently live, clearly display:
+
+LIVE
+
+and allow the user to join it if authorized.
+
+==================================================
+6. MEETING HISTORY
+==================================================
+
+Make the existing "History" sidebar item fully functional.
+
+Create a real Meeting History page.
+
+Load completed meetings from Firestore.
+
+Display:
+
+- Meeting title
+- Date
+- Start time
+- Duration
+- Host
+- Participants
+- Transcript availability
+- AI summary availability
+- Action items
+- Status
+
+Allow the user to click a completed meeting and open its details.
+
+Meeting details should contain:
+
+LIVE TRANSCRIPT / TRANSCRIPT
+
+AI SUMMARY
+
+ACTION ITEMS
+
+MEETING INFORMATION
+
+Do not use fake/static history data.
+
+If there are no previous meetings, show a clean empty state such as:
+
+"No meetings yet.
+Start your first live meeting to build your meeting history."
+
+==================================================
+7. AI NOTES
+==================================================
+
+Make the existing "AI Notes" sidebar item functional.
+
+AI Notes must be generated from REAL meeting transcript data.
+
+For a completed meeting, provide:
+
+- AI Summary
+- Key discussion points
+- Important decisions
+- Action items
+- Suggested follow-ups
+
+Example structure:
+
+AI SUMMARY
+A concise summary of what was discussed.
+
+KEY POINTS
+• ...
+• ...
+• ...
+
+DECISIONS
+• ...
+• ...
+
+ACTION ITEMS
+• Task — Person responsible — optional deadline
+
+FOLLOW-UPS
+• ...
+
+Do NOT generate random notes unrelated to the transcript.
+
+The AI must receive the actual meeting transcript as input.
+
+Use the project's already available AI integration/API if one is already configured.
+
+If no AI API is currently configured:
+- inspect the existing project first
+- do not expose secret API keys in frontend code
+- implement the server-side AI endpoint/integration architecture safely
+- keep the UI functional and clearly indicate if an AI provider still needs configuration
+
+Never put private API keys directly into client-side React/Vite source code.
+
+==================================================
+8. FIRESTORE AI NOTES STORAGE
+==================================================
+
+Store generated AI notes in Firestore.
+
+For example:
+
+meetings/{meetingId}
+
+or a suitable related collection/subcollection.
+
+Persist:
+
+- summary
+- keyPoints
+- decisions
+- actionItems
+- followUps
+- generatedAt
+
+When the user refreshes the page, the AI notes must still exist.
+
+Do not regenerate unnecessarily every time the page renders.
+
+==================================================
+9. DASHBOARD INTEGRATION
+==================================================
+
+Update the existing Dashboard so its meeting statistics use real Firestore data.
+
+Replace hardcoded/demo statistics wherever they represent application data.
+
+Examples:
+
+Total meetings
+AI summaries
+Hours saved
+Tasks generated
+
+These should be calculated from real stored data when possible.
+
+Recent Meetings should come from Firestore.
+
+Upcoming Meetings should come from Firestore.
+
+Do not break the current dashboard design.
+
+==================================================
+10. USER-SPECIFIC DATA
+==================================================
+
+All meeting data must be associated with the authenticated Firebase user.
+
+Use Firebase Authentication UID.
+
+A logged-in user should only see data they are authorized to access.
+
+Do not rely only on frontend route protection.
+
+Implement appropriate Firestore security rules.
+
+Unauthenticated users must not be able to access private meeting data.
+
+==================================================
+11. FIRESTORE SECURITY RULES
+==================================================
+
+Review the current Firestore rules.
+
+Do NOT leave private meeting data publicly readable/writable.
+
+Create secure rules appropriate for:
+
+- authenticated users
+- meeting hosts
+- meeting participants
+- user-specific meeting history
+- AI notes
+
+Make sure the rules match the actual Firestore data structure you implement.
+
+==================================================
+12. ROUTING
+==================================================
+
+Keep the current routes working:
+
+/
+ /login
+ /signup
+ /dashboard
+ /profile
+ /settings
+
+Add or complete:
+
+ /meetings
+ /meetings/:meetingId
+ /history
+ /history/:meetingId
+ /ai-notes
+
+Use protected routes for private pages.
+
+Unauthenticated users must be redirected to /login.
+
+==================================================
+13. RESPONSIVE DESIGN
+==================================================
+
+Everything must work on:
+
+- Desktop
+- Laptop
+- Tablet
+- Mobile
+
+Do not allow the meeting transcript or participant panels to overflow the screen.
+
+The sidebar should remain responsive.
+
+The Live Meeting page should be usable on mobile.
+
+==================================================
+14. DESIGN CONSISTENCY
+==================================================
+
+Keep the current Gen Z Meet design.
+
+Use the existing:
+
+- dark navy background
+- cyan/mint accent
+- purple accent
+- rounded cards
+- existing typography
+- existing sidebar
+- existing buttons
+- existing visual language
+
+Do not introduce a completely different design.
+
+The Live Meeting page should feel like it belongs to the same application.
+
+==================================================
+15. REMOVE MOCK DATA ONLY WHERE APPROPRIATE
+==================================================
+
+Where Dashboard, Meetings, History, or AI Notes currently display hardcoded example values, replace them with real Firestore-backed data.
+
+Do NOT remove placeholder text that is purely descriptive UI copy.
+
+Do NOT break the existing landing page.
+
+==================================================
+16. ERROR HANDLING
+==================================================
+
+Handle:
+
+- Firebase connection errors
+- Firestore permission errors
+- microphone permission denied
+- camera permission denied
+- speech recognition unavailable
+- missing meeting
+- invalid meeting ID
+- AI generation failure
+- empty transcript
+- unauthenticated access
+
+Show friendly UI messages instead of crashing.
+
+==================================================
+17. LOADING STATES
+==================================================
+
+Add proper loading states for:
+
+- Meetings
+- History
+- AI Notes
+- Dashboard statistics
+- Live meeting initialization
+- AI generation
+
+Do not show fake data while waiting for Firestore.
+
+==================================================
+18. TEST EVERYTHING
+==================================================
+
+After implementation, thoroughly test the entire application.
+
+Test:
+
+1. Landing page
+2. Signup
+3. Login
+4. Forgot password
+5. Protected routes
+6. Dashboard
+7. Profile
+8. Settings
+9. Start Live Meeting
+10. Meeting ID generation
+11. Microphone permission
+12. Camera permission
+13. Live transcript
+14. Firestore meeting creation
+15. Firestore updates
+16. End meeting
+17. Meeting History
+18. Meeting details
+19. AI Notes
+20. Firestore AI note persistence
+21. Logout
+22. Mobile responsive layout
+23. Production build
+
+==================================================
+19. IMPORTANT IMPLEMENTATION RULE
+==================================================
+
+Before changing anything:
+
+INSPECT THE EXISTING CODEBASE.
+
+Do not blindly rewrite the application.
+
+Reuse existing:
+- Firebase initialization
+- authentication functions
+- routing
+- components
+- styling
+- dashboard components
+- Firestore configuration
+- environment variables
+
+Only add or modify what is necessary.
+
+Do not create duplicate Firebase initialization.
+
+Do not create duplicate authentication systems.
+
+Do not hardcode Firebase credentials.
+
+Use the existing VITE_FIREBASE_* environment variables.
+
+==================================================
+20. FINAL VERIFICATION REPORT
+==================================================
+
+When finished, give me a clear report containing:
+
+A. Files created
+B. Files modified
+C. Firestore collections/documents created
+D. Firebase security rules changed
+E. Routes added
+F. Features completed
+G. Features tested successfully
+H. Any environment variables still required
+I. Any remaining limitations
+
+Most importantly:
+
+Do not tell me something is working unless you actually verify it.
+
+The final application should have this complete flow:
+
+Landing Page
+    ↓
+Signup / Login
+    ↓
+Dashboard
+    ↓
+Start Live Meeting
+    ↓
+LIVE MEETING
+    ↓
+Live Transcript
+    ↓
+End Meeting
+    ↓
+Firestore saves meeting
+    ↓
+AI generates Summary + Key Points + Decisions + Action Items
+    ↓
+Meeting History
+    ↓
+AI Notes
+    ↓
+Persistent meeting memory
+
+Make this a REAL working Firebase-backed implementation, not a visual prototype.
