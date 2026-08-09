@@ -77,7 +77,7 @@ async function findMeeting(id: string, userId: string) {
   return row;
 }
 
-function buildNotes(transcript: TranscriptEntry[]): Notes {
+function buildLocalNotes(transcript: TranscriptEntry[]): Notes {
   const lines = transcript.map((entry) => entry.text.trim()).filter(Boolean);
   const joined = lines.join(" ");
   const sentences = joined
@@ -104,6 +104,76 @@ function buildNotes(transcript: TranscriptEntry[]): Notes {
       : ["Review the transcript and add any follow-ups manually."],
     generatedAt: new Date(),
   };
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string" && item.trim());
+}
+
+function parseAiNotes(value: unknown): Omit<Notes, "generatedAt"> | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.summary !== "string" || !candidate.summary.trim()) return null;
+  if (!isStringArray(candidate.keyPoints) || !isStringArray(candidate.decisions)) return null;
+  if (!isStringArray(candidate.actionItems) || !isStringArray(candidate.followUps)) return null;
+
+  return {
+    summary: candidate.summary.trim(),
+    keyPoints: candidate.keyPoints.map((item) => item.trim()).filter(Boolean).slice(0, 6),
+    decisions: candidate.decisions.map((item) => item.trim()).filter(Boolean).slice(0, 6),
+    actionItems: candidate.actionItems.map((item) => item.trim()).filter(Boolean).slice(0, 6),
+    followUps: candidate.followUps.map((item) => item.trim()).filter(Boolean).slice(0, 6),
+  };
+}
+
+async function buildNotes(transcript: TranscriptEntry[]): Promise<Notes> {
+  const fallback = buildLocalNotes(transcript);
+  const apiKey = process.env.OPENAI_API_KEY;
+  const transcriptText = transcript
+    .map((entry) => `${entry.speaker}: ${entry.text.trim()}`)
+    .filter((line) => !line.endsWith(":"))
+    .join("\n")
+    .slice(0, 16_000);
+
+  if (!apiKey || !transcriptText) return fallback;
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-5.4-mini",
+        max_completion_tokens: 1400,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You create concise meeting notes. Return only valid JSON with exactly these keys: summary (string), keyPoints (string[]), decisions (string[]), actionItems (string[]), followUps (string[]). Do not invent details. Use empty arrays when the transcript does not support a category.",
+          },
+          {
+            role: "user",
+            content: `Summarize this meeting transcript:\n\n${transcriptText}`,
+          },
+        ],
+      }),
+      signal: AbortSignal.timeout(12_000),
+    });
+
+    if (!response.ok) return fallback;
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string | null } }>;
+    };
+    const content = payload.choices?.[0]?.message?.content;
+    if (!content) return fallback;
+    const parsed = parseAiNotes(JSON.parse(content));
+    return parsed ? { ...parsed, generatedAt: new Date() } : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 router.get("/meetings", async (req, res): Promise<void> => {
@@ -254,7 +324,7 @@ router.post("/meetings/:meetingId/end", async (req, res): Promise<void> => {
   const [row] = await db.update(meetingsTable).set({
     status: "ended",
     endedAt,
-    notes: buildNotes(existing.transcript ?? []),
+    notes: await buildNotes(existing.transcript ?? []),
   }).where(eq(meetingsTable.id, params.data.meetingId)).returning();
   res.json(EndMeetingResponse.parse(normalizeMeeting(row)));
 });
@@ -275,7 +345,7 @@ router.post("/meetings/:meetingId/notes", async (req, res): Promise<void> => {
     return;
   }
   const [row] = await db.update(meetingsTable).set({
-    notes: buildNotes(existing.transcript ?? []),
+    notes: await buildNotes(existing.transcript ?? []),
   }).where(eq(meetingsTable.id, params.data.meetingId)).returning();
   res.json(GenerateMeetingNotesResponse.parse(normalizeMeeting(row)));
 });

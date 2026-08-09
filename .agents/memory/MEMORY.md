@@ -1,0 +1,1 @@
+- [Managed AI availability](managed-ai-availability.md) — if managed provider setup is blocked by account upgrade, use the secure direct-key flow and retain a local fallback.
