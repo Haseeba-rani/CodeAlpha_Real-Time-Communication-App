@@ -496,3 +496,53 @@ export const GetDashboardResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the current workspace profile
+ */
+export const GetProfileResponse = zod.object({
+  "userId": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "bio": zod.string(),
+  "timezone": zod.string(),
+  "language": zod.string(),
+  "role": zod.string(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Save the current workspace profile
+ */
+export const updateProfileBodyNameMax = 80;
+
+export const updateProfileBodyBioMax = 240;
+
+export const updateProfileBodyTimezoneMax = 80;
+
+export const updateProfileBodyLanguageMax = 80;
+
+export const updateProfileBodyRoleMax = 80;
+
+
+
+export const UpdateProfileBody = zod.object({
+  "name": zod.string().min(1).max(updateProfileBodyNameMax).optional(),
+  "bio": zod.string().max(updateProfileBodyBioMax).optional(),
+  "timezone": zod.string().max(updateProfileBodyTimezoneMax).optional(),
+  "language": zod.string().max(updateProfileBodyLanguageMax).optional(),
+  "role": zod.string().max(updateProfileBodyRoleMax).optional()
+})
+
+export const UpdateProfileResponse = zod.object({
+  "userId": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "bio": zod.string(),
+  "timezone": zod.string(),
+  "language": zod.string(),
+  "role": zod.string(),
+  "updatedAt": zod.coerce.date()
+})
+
+

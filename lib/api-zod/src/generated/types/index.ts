@@ -17,5 +17,7 @@ export * from './meetingStatus';
 export * from './meetingUpdate';
 export * from './meetingUpdateStatus';
 export * from './participant';
+export * from './profile';
+export * from './profileUpdate';
 export * from './transcriptEntry';
 export * from './transcriptInput';

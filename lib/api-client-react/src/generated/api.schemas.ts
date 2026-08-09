@@ -109,6 +109,33 @@ export interface Dashboard {
   upcoming: Meeting[];
 }
 
+export interface Profile {
+  userId: string;
+  name: string;
+  email: string;
+  bio: string;
+  timezone: string;
+  language: string;
+  role: string;
+  updatedAt: string;
+}
+
+export interface ProfileUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  /** @maxLength 240 */
+  bio?: string;
+  /** @maxLength 80 */
+  timezone?: string;
+  /** @maxLength 80 */
+  language?: string;
+  /** @maxLength 80 */
+  role?: string;
+}
+
 export type ListMeetingsParams = {
 status?: ListMeetingsStatus;
 };

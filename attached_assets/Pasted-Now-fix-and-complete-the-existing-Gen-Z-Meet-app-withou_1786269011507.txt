@@ -1,0 +1,66 @@
+Now fix and complete the existing Gen Z Meet app without changing or breaking the working Firebase Authentication, Firestore setup, dashboard, or existing routes.
+
+Focus only on these fixes:
+
+1. PROFILE
+- Fix the Profile page Save Changes button.
+- When I change my name, bio, timezone, language, etc., save the data to Firestore.
+- After saving, the new name must immediately appear in the dashboard/header/profile.
+- Data must remain after page refresh and logout/login.
+
+2. LOGIN / SIGNUP
+- Keep the existing Firebase Login, Signup, Forgot Password, and protected routes working.
+- Make sure the Landing Page "Sign in" and "Get started" buttons correctly open Login/Signup.
+- Do not remove or replace Firebase Authentication.
+
+3. MEETINGS
+- Keep the current single-user meeting functionality.
+- Make Start Meeting work properly.
+- Do NOT implement multi-person/video calling or meeting invitations yet.
+- Make the meeting screen feel live and interactive.
+
+4. LIVE TRANSCRIPT
+- Make the transcript area visually update while the meeting is running.
+- Show text appearing progressively as if it is being captured live.
+- Add subtle microphone/waveform activity.
+- Show "LIVE" and "Capturing as you speak" states.
+- Do not make it look like a static screenshot.
+
+5. AI NOTES
+- Connect the existing OpenAI API integration using the secure OPENAI_API_KEY Replit Secret.
+- When a meeting has transcript/content, generate real AI Notes.
+- Generate:
+  - Summary
+  - Key points
+  - Decisions
+  - Action items
+  - Next steps
+- Do not use fake hardcoded AI notes.
+- Keep the API key server-side and never expose it in frontend code.
+
+6. HISTORY
+- Save completed meetings and their transcripts/AI notes to Firestore.
+- Make the History page display the user's real saved meetings.
+- Clicking a meeting should show its transcript and AI Notes.
+
+7. AI NOTES PAGE
+- Make the AI Notes page show real notes generated from the user's meetings.
+- Fix the current non-working functionality.
+- Improve the AI Notes icon so it looks polished and matches the Gen Z Meet design.
+
+8. LANDING PAGE
+- Keep the current dark Gen Z Meet visual style.
+- Do not completely redesign the landing page again.
+- Improve the hero meeting interface so it feels alive.
+- Add subtle animations such as live transcript lines appearing, waveform movement, and meeting activity.
+- Keep the text/branding consistent with Gen Z Meet.
+- Make the "Sign in" and "Get started" buttons functional.
+
+IMPORTANT:
+- Do not remove working Firebase Authentication or Firestore.
+- Do not replace real functionality with mock data.
+- Do not break existing routes.
+- Do not change Firebase configuration.
+- Do not implement multi-person communication yet.
+- After making the changes, test Login, Signup, Profile save, Start Meeting, History, and AI Notes.
+- Fix any errors you find before finishing.

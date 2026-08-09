@@ -14,6 +14,8 @@ tags:
     description: Meeting lifecycle and transcripts
   - name: dashboard
     description: Dashboard aggregates
+  - name: profile
+    description: Current workspace profile
 paths:
   /healthz:
     get:
@@ -188,6 +190,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Dashboard"
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get the current workspace profile
+      responses:
+        "200":
+          description: Current profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    patch:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Save the current workspace profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Saved profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
 components:
   parameters:
     MeetingId:
@@ -303,3 +334,23 @@ components:
           items:
             $ref: "#/components/schemas/Meeting"
       required: [totalMeetings, liveMeetings, summaries, actionItems, hoursSaved, recent, upcoming]
+    Profile:
+      type: object
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        email: { type: string }
+        bio: { type: string }
+        timezone: { type: string }
+        language: { type: string }
+        role: { type: string }
+        updatedAt: { type: string, format: date-time }
+      required: [userId, name, email, bio, timezone, language, role, updatedAt]
+    ProfileUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        bio: { type: string, maxLength: 240 }
+        timezone: { type: string, maxLength: 80 }
+        language: { type: string, maxLength: 80 }
+        role: { type: string, maxLength: 80 }
