@@ -2,6 +2,10 @@ import { type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { CalendarDays, ChevronRight, Clock3, Command, FileText, LayoutDashboard, LifeBuoy, ListVideo, LogOut, Menu, Plus, Settings, Sparkles, UserRound, Video, X } from 'lucide-react';
 import { useState } from 'react';
+import { signOut } from 'firebase/auth';
+import { useGetProfile } from '@workspace/api-client-react';
+import { useAuth } from '@/lib/auth-context';
+import { auth } from '@/lib/firebase';
 
 const nav = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -25,6 +29,10 @@ export function Logo({ compact = false }: { compact?: boolean }) {
 export function AppShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
+  const profile = useGetProfile();
+  const displayName = profile.data?.name || user?.displayName || user?.email?.split('@')[0] || 'Your workspace';
+  const initials = displayName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
   const current = nav.find((item) => location.startsWith(item.href));
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
@@ -48,8 +56,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link href="/settings" onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold ${location === '/settings' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-white/[.04]'}`} data-testid="link-nav-settings"><Settings size={17} /> Settings</Link>
         </nav>
         <div className="mt-auto rounded-2xl border border-sidebar-border bg-white/[.025] p-4">
-          <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-full bg-accent/20 font-display text-sm text-accent">AM</div><div><div className="text-sm font-bold">Ari Mendoza</div><div className="font-mono-ui text-[10px] text-muted-foreground">product crew</div></div></div>
-          <button className="mt-4 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground" data-testid="button-sign-out"><LogOut size={14} /> Sign out</button>
+          <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-full bg-accent/20 font-display text-sm text-accent">{initials}</div><div><div className="text-sm font-bold">{displayName}</div><div className="font-mono-ui text-[10px] text-muted-foreground">{profile.data?.role || 'your workspace'}</div></div></div>
+          <button onClick={() => void signOut(auth)} className="mt-4 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground" data-testid="button-sign-out"><LogOut size={14} /> Sign out</button>
         </div>
       </aside>
       {mobileOpen && <button className="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-overlay-menu" />}

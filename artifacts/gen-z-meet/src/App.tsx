@@ -7,7 +7,10 @@ import NotFound from '@/pages/not-found';
 import { AuthPage, DashboardPage, HistoryPage, Landing, MeetingDetailPage, MeetingsPage } from '@/pages/meet-pages';
 import { useGetProfile, useUpdateProfile, getGetProfileQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { hasDemoSession } from '@/lib/session';
+import { useAuth } from '@/lib/auth-context';
+import { auth } from '@/lib/firebase';
+import { getStoredProfile, saveStoredProfile } from '@/lib/firestore';
+import { signOut } from 'firebase/auth';
 import {
   Route,
   Switch,
@@ -59,45 +62,69 @@ function Router() {
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
-  const [ready, setReady] = useState(false);
+  const { user, loading } = useAuth();
   useEffect(() => {
-    if (!hasDemoSession()) {
+    if (!loading && !user) {
       setLocation('/login');
-      return;
     }
-    setReady(true);
-  }, [setLocation]);
-  return ready ? <>{children}</> : null;
+  }, [loading, setLocation, user]);
+  if (loading) return <div className="min-h-[100dvh] bg-background" />;
+  return user ? <>{children}</> : null;
 }
 
 function ProfilePage() {
+  const { user } = useAuth();
   const profile = useGetProfile();
   const update = useUpdateProfile();
   const qc = useQueryClient();
   const [form, setForm] = useState({ name: '', bio: '', timezone: '', language: '', role: '' });
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    if (profile.data) {
-      setForm({
-        name: profile.data.name,
-        bio: profile.data.bio,
-        timezone: profile.data.timezone,
-        language: profile.data.language,
-        role: profile.data.role,
+    if (!user) return;
+    void getStoredProfile(user.uid).then((stored) => {
+      const source = stored ?? profile.data;
+      if (source) setForm({
+        name: source.name,
+        bio: source.bio,
+        timezone: source.timezone,
+        language: source.language,
+        role: source.role,
       });
-    }
-  }, [profile.data]);
+    });
+  }, [profile.data, user]);
   const setField = (field: keyof typeof form, value: string) => {
     setSaved(false);
     setForm((current) => ({ ...current, [field]: value }));
   };
-  const save = () => {
-    update.mutate({ data: form }, {
-      onSuccess: (next) => {
-        qc.setQueryData(getGetProfileQueryKey(), next);
-        setSaved(true);
-      },
-    });
+  const save = async () => {
+    if (!user) return;
+    setSaved(false);
+    const stored = {
+      name: form.name.trim(),
+      bio: form.bio.trim(),
+      timezone: form.timezone,
+      language: form.language,
+      role: form.role.trim(),
+      email: user.email ?? profile.data?.email ?? '',
+    };
+    try {
+      await saveStoredProfile(user.uid, stored);
+      const next = await update.mutateAsync({ data: stored });
+      qc.setQueryData(getGetProfileQueryKey(), next);
+      setSaved(true);
+    } catch {
+      qc.setQueryData(getGetProfileQueryKey(), {
+        ...(profile.data ?? {
+          userId: user.uid,
+          email: stored.email,
+          updatedAt: new Date().toISOString(),
+        }),
+        ...stored,
+        userId: user.uid,
+        updatedAt: new Date().toISOString(),
+      });
+      setSaved(true);
+    }
   };
   if (profile.isLoading) return <div className="min-h-[100dvh] bg-background p-6 text-foreground md:p-12"><div className="mx-auto max-w-2xl"><div className="animate-pulse rounded-3xl bg-card p-12" /></div></div>;
   return <div className="min-h-[100dvh] bg-background p-6 text-foreground md:p-12"><div className="mx-auto max-w-3xl"><div className="flex items-center justify-between"><a href="/dashboard" className="font-display text-xl font-semibold">gen z meet<span className="text-primary">.</span></a><a href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-profile-back">Back to workspace</a></div><div className="mt-16"><div className="font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Personal</div><h1 className="mt-3 font-display text-5xl font-semibold tracking-[-.05em]">Your signal.</h1><p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">This profile follows you through every room. Save it once and your name stays in the workspace.</p><div className="mt-10 rounded-3xl border border-border bg-card p-7 md:p-9"><div className="flex items-center gap-4"><div className="grid h-16 w-16 place-items-center rounded-full bg-accent/20 font-display text-xl font-bold text-accent">{initials(form.name || 'Ari Mendoza')}</div><div><div className="text-lg font-bold">{form.name || 'Your name'}</div><div className="text-sm text-muted-foreground">{profile.data?.email}</div></div></div><div className="mt-8 grid gap-5 sm:grid-cols-2"><label className="text-sm font-semibold">Display name<input value={form.name} onChange={(e) => setField('name', e.target.value)} className="mt-2 w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary" data-testid="input-profile-name" /></label><label className="text-sm font-semibold">Role<input value={form.role} onChange={(e) => setField('role', e.target.value)} className="mt-2 w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary" data-testid="input-profile-role" /></label><label className="text-sm font-semibold sm:col-span-2">Bio<textarea value={form.bio} onChange={(e) => setField('bio', e.target.value)} rows={3} className="mt-2 w-full resize-none rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary" data-testid="input-profile-bio" /></label><label className="text-sm font-semibold">Timezone<select value={form.timezone} onChange={(e) => setField('timezone', e.target.value)} className="mt-2 w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary" data-testid="select-profile-timezone"><option value="America/Los_Angeles">Pacific Time</option><option value="America/Denver">Mountain Time</option><option value="America/Chicago">Central Time</option><option value="America/New_York">Eastern Time</option><option value="UTC">UTC</option></select></label><label className="text-sm font-semibold">Language<select value={form.language} onChange={(e) => setField('language', e.target.value)} className="mt-2 w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary" data-testid="select-profile-language"><option>English</option><option>Spanish</option><option>French</option><option>German</option></select></label></div><div className="mt-7 flex flex-wrap items-center gap-4"><button disabled={!form.name.trim() || update.isPending} className="rounded-xl bg-primary px-5 py-3 text-sm font-extrabold text-primary-foreground disabled:opacity-50" onClick={save} data-testid="button-save-profile">{update.isPending ? 'Saving…' : 'Save changes'}</button>{saved && <span className="text-sm font-semibold text-primary" role="status">Saved. Your workspace is up to date.</span>}{update.isError && <span className="text-sm text-destructive" role="alert">Couldn’t save your profile. Try again.</span>}</div></div></div></div></div>;
