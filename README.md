@@ -1,5 +1,4 @@
-# Gen-Z Meet 🚀
-
+# Gen-Z Meet — Full Stack (CodeAlpha Internship Project)
 A modern, high-contrast, real-time video conferencing and collaboration workspace built with React, WebRTC, Firebase, and Express.
 
 ---
