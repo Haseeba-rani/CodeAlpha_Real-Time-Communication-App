@@ -338,6 +338,8 @@ button:active { transform: translateY(1px) scale(.99); }
 .animate-rise-2 { animation: rise .5s .08s ease both; }
 .animate-rise-3 { animation: rise .5s .16s ease both; }
 .live-dot { animation: pulse-dot 1.7s ease-in-out infinite; }
+@keyframes tap-burst { 0% { opacity: 1; transform: translate(-50%, -50%) scale(.6); } 60% { opacity: .9; transform: translate(-50%, -50%) scale(1.3); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } }
+.tap-effect { position: fixed; z-index: 9999; pointer-events: none; font-size: 1.4rem; line-height: 1; user-select: none; transform-origin: center; animation: tap-burst 0.5s cubic-bezier(.22,1,.36,1) both; }
 
 /**
  * Using the elevate system.
@@ -450,3 +452,30 @@ button:active { transform: translateY(1px) scale(.99); }
     inset: -1px;
   }
 }
+
+/* Universal Hand Pointer Cursor for all interactive elements */
+@layer base {
+  button,
+  [role="button"],
+  a,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="checkbox"],
+  input[type="radio"],
+  select,
+  summary,
+  .cursor-pointer,
+  [data-testid*="button"],
+  [data-testid*="link"],
+  [data-testid*="row-meeting"] {
+    cursor: pointer !important;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input:disabled {
+    cursor: not-allowed !important;
+  }
+}
+

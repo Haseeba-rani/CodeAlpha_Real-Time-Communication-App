@@ -16,7 +16,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setAuthTokenGetter(() => auth.currentUser?.getIdToken() ?? null);
-    setUserIdGetter(() => auth.currentUser?.uid ?? null);
+    setUserIdGetter(() => {
+      if (auth.currentUser?.uid) return auth.currentUser.uid;
+      if (typeof window !== 'undefined') {
+        let gid = sessionStorage.getItem('genz_meet_guest_id');
+        if (!gid) {
+          gid = `guest_${Math.random().toString(36).slice(2, 10)}`;
+          sessionStorage.setItem('genz_meet_guest_id', gid);
+        }
+        return gid;
+      }
+      return null;
+    });
     return onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser);
       setLoading(false);

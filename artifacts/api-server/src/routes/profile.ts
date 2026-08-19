@@ -11,12 +11,12 @@ const router: IRouter = Router();
 const DEMO_USER_ID = "demo-user";
 const DEFAULT_PROFILE = {
   userId: DEMO_USER_ID,
-  name: "Ari Mendoza",
-  email: "ari@yourcrew.co",
-  bio: "Product lead",
+  name: "Participant",
+  email: "",
+  bio: "",
   timezone: "America/Los_Angeles",
   language: "English",
-  role: "Product lead",
+  role: "Member",
 };
 
 function getUserId(req: { headers: Record<string, string | string[] | undefined> }): string {

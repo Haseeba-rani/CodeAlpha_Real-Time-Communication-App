@@ -22,7 +22,7 @@ import {
   UpdateMeetingParams,
   UpdateMeetingResponse,
 } from "@workspace/api-zod";
-import { db, meetingsTable, type MeetingRow } from "@workspace/db";
+import { db, meetingsTable, profilesTable, type MeetingRow } from "@workspace/db";
 
 const router: IRouter = Router();
 const DEMO_USER_ID = "demo-user";
@@ -69,11 +69,11 @@ function normalizeMeeting(row: MeetingRow) {
   };
 }
 
-async function findMeeting(id: string, userId: string) {
+async function findMeeting(id: string) {
   const [row] = await db
     .select()
     .from(meetingsTable)
-    .where(and(eq(meetingsTable.id, id), eq(meetingsTable.hostId, userId)));
+    .where(eq(meetingsTable.id, id));
   return row;
 }
 
@@ -186,11 +186,11 @@ router.get("/meetings", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(meetingsTable)
-    .where(eq(meetingsTable.hostId, userId))
     .orderBy(desc(meetingsTable.startedAt));
+  const userMeetings = rows.filter((m) => m.hostId === userId || (m.participants ?? []).some((p) => p.id === userId));
   const filtered = parsed.data.status && parsed.data.status !== "all"
-    ? rows.filter((meeting) => meeting.status === parsed.data.status)
-    : rows;
+    ? userMeetings.filter((meeting) => meeting.status === parsed.data.status)
+    : userMeetings;
   res.json(ListMeetingsResponse.parse(filtered.map(normalizeMeeting)));
 });
 
@@ -231,7 +231,7 @@ router.get("/meetings/:meetingId", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const row = await findMeeting(params.data.meetingId, getUserId(req));
+  const row = await findMeeting(params.data.meetingId);
   if (!row) {
     res.status(404).json({ error: "Meeting not found" });
     return;
@@ -252,7 +252,7 @@ router.patch("/meetings/:meetingId", async (req, res): Promise<void> => {
     });
     return;
   }
-  const existing = await findMeeting(params.data.meetingId, getUserId(req));
+  const existing = await findMeeting(params.data.meetingId);
   if (!existing) {
     res.status(404).json({ error: "Meeting not found" });
     return;
@@ -271,12 +271,42 @@ router.post("/meetings/:meetingId/join", async (req, res): Promise<void> => {
     return;
   }
   const userId = getUserId(req);
-  const existing = await findMeeting(params.data.meetingId, userId);
+  const existing = await findMeeting(params.data.meetingId);
   if (!existing) {
-    res.status(404).json({ error: "Only the meeting host can access this demo room." });
+    res.status(404).json({ error: "Meeting not found." });
     return;
   }
-  res.json(JoinMeetingResponse.parse(normalizeMeeting(existing)));
+  const [profile] = await db.select().from(profilesTable).where(eq(profilesTable.userId, userId));
+  const candidateName = (typeof req.body?.name === "string" && req.body.name.trim())
+    ? req.body.name.trim()
+    : (profile?.name && profile.name !== "Participant"
+        ? profile.name
+        : (userId === existing.hostId ? existing.hostName : "Participant"));
+
+  const participants = existing.participants ?? [];
+  const existingIndex = participants.findIndex((p) => p.id === userId);
+  let updatedParticipants = [...participants];
+  if (existingIndex >= 0) {
+    if (candidateName && candidateName !== "Participant") {
+      updatedParticipants[existingIndex] = {
+        ...updatedParticipants[existingIndex],
+        name: candidateName,
+      };
+    }
+  } else {
+    updatedParticipants.push({
+      id: userId,
+      name: candidateName,
+      role: userId === existing.hostId ? "Host" : "Participant",
+      joinedAt: new Date(),
+      isMuted: false,
+      cameraOn: true,
+    });
+  }
+  const [row] = await db.update(meetingsTable).set({
+    participants: updatedParticipants,
+  }).where(eq(meetingsTable.id, params.data.meetingId)).returning();
+  res.json(JoinMeetingResponse.parse(normalizeMeeting(row)));
 });
 
 router.post("/meetings/:meetingId/transcript", async (req, res): Promise<void> => {
@@ -292,7 +322,7 @@ router.post("/meetings/:meetingId/transcript", async (req, res): Promise<void> =
     });
     return;
   }
-  const existing = await findMeeting(params.data.meetingId, getUserId(req));
+  const existing = await findMeeting(params.data.meetingId);
   if (!existing) {
     res.status(404).json({ error: "Meeting not found" });
     return;
@@ -315,7 +345,7 @@ router.post("/meetings/:meetingId/end", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const existing = await findMeeting(params.data.meetingId, getUserId(req));
+  const existing = await findMeeting(params.data.meetingId);
   if (!existing) {
     res.status(404).json({ error: "Meeting not found" });
     return;
@@ -335,7 +365,7 @@ router.post("/meetings/:meetingId/notes", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const existing = await findMeeting(params.data.meetingId, getUserId(req));
+  const existing = await findMeeting(params.data.meetingId);
   if (!existing) {
     res.status(404).json({ error: "Meeting not found" });
     return;
@@ -351,30 +381,33 @@ router.post("/meetings/:meetingId/notes", async (req, res): Promise<void> => {
 });
 
 router.get("/history", async (req, res): Promise<void> => {
+  const userId = getUserId(req);
   const rows = await db
     .select()
     .from(meetingsTable)
-    .where(and(eq(meetingsTable.hostId, getUserId(req)), eq(meetingsTable.status, "ended")))
+    .where(eq(meetingsTable.status, "ended"))
     .orderBy(desc(meetingsTable.endedAt));
-  res.json(ListMeetingHistoryResponse.parse(rows.map(normalizeMeeting)));
+  const userMeetings = rows.filter((m) => m.hostId === userId || (m.participants ?? []).some((p) => p.id === userId));
+  res.json(ListMeetingHistoryResponse.parse(userMeetings.map(normalizeMeeting)));
 });
 
 router.get("/dashboard", async (req, res): Promise<void> => {
+  const userId = getUserId(req);
   const rows = await db
     .select()
     .from(meetingsTable)
-    .where(eq(meetingsTable.hostId, getUserId(req)))
     .orderBy(desc(meetingsTable.startedAt));
-  const ended = rows.filter((row) => row.status === "ended");
+  const userMeetings = rows.filter((m) => m.hostId === userId || (m.participants ?? []).some((p) => p.id === userId));
+  const ended = userMeetings.filter((row) => row.status === "ended");
   const actionItems = ended.reduce((total, row) => total + (row.notes?.actionItems.length ?? 0), 0);
   res.json(GetDashboardResponse.parse({
-    totalMeetings: rows.length,
-    liveMeetings: rows.filter((row) => row.status === "live").length,
+    totalMeetings: userMeetings.length,
+    liveMeetings: userMeetings.filter((row) => row.status === "live").length,
     summaries: ended.filter((row) => row.notes).length,
     actionItems,
     hoursSaved: Number((actionItems * 0.25).toFixed(1)),
-    recent: rows.filter((row) => row.status === "ended").slice(0, 4).map(normalizeMeeting),
-    upcoming: rows.filter((row) => row.status !== "ended").slice(0, 4).map(normalizeMeeting),
+    recent: userMeetings.filter((row) => row.status === "ended").slice(0, 4).map(normalizeMeeting),
+    upcoming: userMeetings.filter((row) => row.status !== "ended").slice(0, 4).map(normalizeMeeting),
   }));
 });
 

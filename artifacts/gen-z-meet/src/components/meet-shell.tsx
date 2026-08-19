@@ -17,10 +17,7 @@ const nav = [
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/dashboard" className="flex items-center gap-3" data-testid="link-brand">
-      <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_26px_hsl(var(--primary)/.2)]">
-        <span className="h-3 w-3 rounded-full border-2 border-current" />
-        <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-accent" />
-      </span>
+      <img src="/logo.svg" alt="Gen Z Meet" className="h-9 w-auto rounded-lg object-contain" />
       {!compact && <span className="font-display text-lg font-semibold tracking-tight text-foreground">gen z meet<span className="text-primary">.</span></span>}
     </Link>
   );
